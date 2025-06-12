@@ -22,98 +22,145 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.ui.text.style.TextOverflow
+import kotlinx.coroutines.launch
 
 
-@Preview(showBackground = true)
+
+suspend fun searchRedditApiTop5(query: String): List<FeedPost> {
+    val response = RedditApi.service.searchReddit(query)
+    return response.data.children.map { it.data }.map {
+        FeedPost(
+            source = Source("Reddit", "R", Color(0xFFFF5722)),
+            user = it.author,
+            badge = "from Reddit",
+            text = it.title,
+            imageUrl = null,
+            tags = listOf("#reddit"),
+            stats = "${it.ups} upvotes, ${it.num_comments} comments",
+            likes = it.ups
+
+        )
+    }
+}
+
+
 @Composable
 fun FeedScreen(
     modifier: Modifier = Modifier,
     onBackClick: () -> Unit = {},
     query: String = "testest",
-    sources: List<Int> = listOf(1, 1, 1, 1)
+    sources: List<Int> = listOf(1, 1, 1, 1),
+    onSearch: (String, List<Int>)  -> Unit = { _ , _ -> }
+
 ) {
-    val posts = listOf(
-        FeedPost(
-            source = Source("Youtube", "Y", Color.Red),
-            user = "Oklahoma City Thunder vs Indiana Pacers",
-            badge = "from Youtube",
-            text = "",
-            imageUrl = "https://i.imgur.com/YOUR_DUMMY_THUMBNAIL.jpg", // Put a correct sample URL or skip the AsyncImage if not using Coil
-            tags = listOf("#gametimehighlights", "#nba", "#nbahighlights"),
-            stats = "1.1M views, 11K likes, 725 comments"
-        ),
-        FeedPost(
-            source = Source("X/Twitter", "X", Color.Black),
-            user = "NBA",
-            badge = "from Twitter/X",
-            text = "Shai follows 38 in Game 1 with 34 tonight\nMOST POINTS EVER by a player in his first 2 career Finals games",
-            imageUrl = null,
-            tags = emptyList(),
-            stats = "11K likes    480 comments"
-        ),
-        FeedPost(
-            source = Source("Reddit", "R", Color(0xFFFF5722)),
-            user = "Moderator17",
-            badge = "from Reddit",
-            text = "[Post Game Thread] The Oklahoma City Thunder control Game 2 against the Indiana Pacers, winning 123-107, behind SGA's 34 pts as they even the series 1-1",
-            imageUrl = null,
-            tags = emptyList(),
-            stats = "5.8K upvotes    1.5K comments"
-        ),
-    )
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
 
-    Column(modifier
-        .fillMaxSize()
-        .background(Color.White)
-    ) {
-        // TopBar
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp, bottom = 12.dp, start = 4.dp, end = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBackClick) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-            }
-            Text(
-                "Back to Home",
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                modifier = Modifier.weight(1f),
-                textAlign = TextAlign.Center
-            )
-            Spacer(Modifier.width(40.dp)) // To balance back button
+
+    var searchBarText by remember { mutableStateOf("${query} ${sources.joinToString(",")}") }
+
+    var posts by remember { mutableStateOf<List<FeedPost>>(emptyList()) }
+
+    LaunchedEffect(sources) {
+        if (!(sources.size == 4 && sources[2] == 1 && sources.count { it == 1 } == 1)) {
+            snackbarHostState.showSnackbar("Only reddit searching is supported at this time.")
+            kotlinx.coroutines.delay(3000)
+
         }
+    }
 
-        // Searchbar (simple, not functional for demo)
-        OutlinedTextField(
-            value = "NBA finals game 2",
-            onValueChange = {},
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .height(44.dp),
-            readOnly = true,
-            singleLine = true,
-            trailingIcon = {
-                Icon(Icons.Default.Search, contentDescription = "Search")
-            },
-            shape = RoundedCornerShape(12.dp)
-        )
-        Spacer(Modifier.height(10.dp))
+    LaunchedEffect(query, sources) {
+        val resultList = mutableListOf<FeedPost>()
+        if (sources[0] == 1) /* YT */ {
+        }
+        if (sources[1] == 1) { /* Twitter */
+        }
+        if (sources[3] == 1) { /* Twitch */
+        }
+        if (sources[2] == 1) resultList.addAll(searchRedditApiTop5(query))
+        posts = resultList.sortedByDescending { it.likes }.take(5)
+    }
 
-        // Feed List
-        LazyColumn(
-            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+
+
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { paddingValues ->
+
+
+        Column(
+            modifier
+                .padding(paddingValues)
+                .fillMaxSize()
+                .background(Color.White)
         ) {
-            items(posts) { post ->
-                FeedPostCard(post)
+            // TopBar
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp, bottom = 12.dp, start = 4.dp, end = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBackClick) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                }
+                Text(
+                    "Back to Home",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Center
+                )
+                Spacer(Modifier.width(40.dp)) // To balance back button
+            }
+
+            LaunchedEffect(query, sources) {
+                searchBarText = "${query}"
+            }
+
+            // Searchbar (simple, not functional for demo)
+            OutlinedTextField(
+                value = searchBarText,
+                onValueChange = { searchBarText = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .height(44.dp),
+                singleLine = true,
+                trailingIcon = {
+                    IconButton(onClick = {
+                        val selectedSources = sources // If this is a List<Int> already
+                        val currentQuery = searchBarText // Or whatever variable holds your search input
+
+                        if (currentQuery.isBlank()) {
+                            coroutineScope.launch { snackbarHostState.showSnackbar("Enter a search term") }
+                        } else if (!(selectedSources.size == 4 && selectedSources[2] == 1 && selectedSources.count { it == 1 } == 1)) {
+                            coroutineScope.launch { snackbarHostState.showSnackbar("Only reddit searching is supported at this time.") }
+                        } else {
+                            onSearch(currentQuery, selectedSources)
+                        }
+
+
+                    }) {
+                        Icon(Icons.Default.Search, contentDescription = "Search",)
+                    }
+                },
+                shape = RoundedCornerShape(12.dp)
+            )
+            Spacer(Modifier.height(10.dp))
+
+            // Feed List
+            LazyColumn(
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+            ) {
+                items(posts) { post ->
+                    FeedPostCard(post)
+                }
             }
         }
     }
 }
-
 @Composable
 fun LazyColumn(contentPadding: PaddingValues, content: () -> Unit) {
 
@@ -127,6 +174,7 @@ data class FeedPost(
     val imageUrl: String?,
     val tags: List<String>,
     val stats: String,
+    val likes: Int
 )
 
 @Composable

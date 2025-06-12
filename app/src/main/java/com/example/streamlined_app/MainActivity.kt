@@ -20,22 +20,24 @@ import androidx.compose.ui.platform.LocalContext
 
 fun saveRecentSearch(context: Context, query: String) {
     val prefs = context.getSharedPreferences("recent_searches", Context.MODE_PRIVATE)
-    val set = LinkedHashSet(prefs.getStringSet("searches", emptySet()))
-    // Remove then re-add to keep "most recent" at end
-    set.remove(query)
-    set.add(query)
-    // Keep a maximum of 10
-    while (set.size > 10) set.remove(set.first())
-    prefs.edit().putStringSet("searches", set).apply()
+    val raw = prefs.getString("recent_searches_list", "") ?: ""
+    val list = raw.split("|||")
+        .filter { it.isNotBlank() && it != query }
+        .toMutableList()
+    list.add(query)
+    while (list.size > 5) list.removeAt(0) // only 10 max
+    prefs.edit().putString("recent_searches_list", list.joinToString("|||")).apply()
 }
 
 fun getRecentSearches(context: Context): List<String> {
     val prefs = context.getSharedPreferences("recent_searches", Context.MODE_PRIVATE)
-    return prefs.getStringSet("searches", emptySet())
-        ?.toList()
-        ?.reversed()
-        ?.take(5)
-        ?: listOf()}
+    return prefs.getString("recent_searches_list", "")
+        ?.split("|||")
+        ?.filter { it.isNotBlank() }
+        ?.takeLast(5)      // last 5, most recent are last
+        ?.reversed()       // so newest appears at top in your UI
+        ?: listOf()
+}
 
 
 class MainActivity : ComponentActivity() {
@@ -50,6 +52,13 @@ class MainActivity : ComponentActivity() {
 
             val context = LocalContext.current
             var recentSearches by remember { mutableStateOf(getRecentSearches(context)) }
+
+
+            LaunchedEffect(feed) {
+                if (!feed) {
+                    recentSearches = getRecentSearches(context)
+                }
+            }
 
 
             StreamlinedappTheme {
@@ -81,7 +90,16 @@ class MainActivity : ComponentActivity() {
                     FeedScreen(
                         onBackClick = { feed = false },
                         query = query,
-                        sources = sources
+                        sources = sources,
+                        onSearch = { newQuery, newSources ->
+                            // Save recent search, update state, etc.
+                            saveRecentSearch(context, newQuery)
+                            recentSearches = getRecentSearches(context)
+                            query = newQuery
+                            sources = newSources
+
+                            // Optionally trigger a feed refresh here!
+                        }
                     )
                 }
             }
@@ -89,18 +107,3 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    StreamlinedappTheme {
-        Greeting("Android")
-    }
-}
