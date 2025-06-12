@@ -112,14 +112,13 @@ fun FeedScreen(
                     modifier = Modifier.weight(1f),
                     textAlign = TextAlign.Center
                 )
-                Spacer(Modifier.width(40.dp)) // To balance back button
+                Spacer(Modifier.width(40.dp))
             }
 
             LaunchedEffect(query, sources) {
                 searchBarText = "${query}"
             }
 
-            // Searchbar (simple, not functional for demo)
             OutlinedTextField(
                 value = searchBarText,
                 onValueChange = { searchBarText = it },
@@ -130,8 +129,8 @@ fun FeedScreen(
                 singleLine = true,
                 trailingIcon = {
                     IconButton(onClick = {
-                        val selectedSources = sources // If this is a List<Int> already
-                        val currentQuery = searchBarText // Or whatever variable holds your search input
+                        val selectedSources = sources
+                        val currentQuery = searchBarText
 
                         if (currentQuery.isBlank()) {
                             coroutineScope.launch { snackbarHostState.showSnackbar("Enter a search term") }
@@ -202,14 +201,11 @@ fun FeedPostCard(post: FeedPost) {
                     )
                 }
                 Spacer(Modifier.weight(1f))
-                Icon(imageVector = Icons.Default.MoreVert, contentDescription = "More")
             }
 
             if (post.imageUrl != null) {
-                // For image loading, you can use Coil, or comment out this part if not added yet
                 Spacer(modifier = Modifier.height(8.dp))
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    // Dummy Box in place of actual image loader:
                     Box(
                         Modifier
                             .height(120.dp)

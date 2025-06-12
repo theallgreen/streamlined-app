@@ -25,7 +25,7 @@ fun saveRecentSearch(context: Context, query: String) {
         .filter { it.isNotBlank() && it != query }
         .toMutableList()
     list.add(query)
-    while (list.size > 5) list.removeAt(0) // only 10 max
+    while (list.size > 5) list.removeAt(0)
     prefs.edit().putString("recent_searches_list", list.joinToString("|||")).apply()
 }
 
@@ -34,8 +34,8 @@ fun getRecentSearches(context: Context): List<String> {
     return prefs.getString("recent_searches_list", "")
         ?.split("|||")
         ?.filter { it.isNotBlank() }
-        ?.takeLast(5)      // last 5, most recent are last
-        ?.reversed()       // so newest appears at top in your UI
+        ?.takeLast(5)
+        ?.reversed()
         ?: listOf()
 }
 
@@ -86,19 +86,16 @@ class MainActivity : ComponentActivity() {
                         }
                     )
                 } else {
-                    // Pass back parameters if FeedScreen needs them
                     FeedScreen(
                         onBackClick = { feed = false },
                         query = query,
                         sources = sources,
                         onSearch = { newQuery, newSources ->
-                            // Save recent search, update state, etc.
                             saveRecentSearch(context, newQuery)
                             recentSearches = getRecentSearches(context)
                             query = newQuery
                             sources = newSources
 
-                            // Optionally trigger a feed refresh here!
                         }
                     )
                 }

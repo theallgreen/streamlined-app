@@ -112,17 +112,14 @@ fun HomeScreen(
                             maxLines = 1
                         )
                         IconButton(onClick = {
-                            // Prepare the 4 numbers in a list (0/1 per source)
                             val selectedSources =
                                 sources.map { if (checkedState[it.name] == true) 1 else 0 }
                             if (searchText.isBlank()) {
-                                // Show error snackbar
                                 coroutineScope.launch { snackbarHostState.showSnackbar("Enter a search term") }
                             } else if (!(selectedSources.size == 4 && selectedSources[2] == 1 && selectedSources.count { it == 1 } == 1)) {
-                                // Show error snackbar
                                 coroutineScope.launch { snackbarHostState.showSnackbar("Only reddit searching is supported at this time.") }
                             } else {
-                                onSearch(searchText, selectedSources) // Only call if valid!
+                                onSearch(searchText, selectedSources)
                             }
                         }) {
                             Icon(Icons.Default.Search, contentDescription = "Search")
@@ -170,7 +167,6 @@ fun HomeScreen(
                     recentSearches.forEach { term ->
                         Button(
                             onClick = {
-                                // (You may want to also update source selections etc., or just run the search)
                                 val selectedSources =
                                     sources.map { if (checkedState[it.name] == true) 1 else 0 }
                                 onRecentSearchClick(term, selectedSources)
@@ -192,7 +188,6 @@ fun HomeScreen(
 
 
 
-// Helper data and icon composable
 data class Source(val name: String, val symbol: String, val color: Color)
 @Composable
 fun SourceIcon(source: Source) {
